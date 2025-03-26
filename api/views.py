@@ -48,7 +48,7 @@ def import_users(request):
                 errors.append({"data": row, "message": str(e)})
                 continue
 
-            if email in existing_emails:
+            if email in existing_emails or any(user.email == email for user in users_to_create):
                 errors.append({"data": row, "message": "User already exists"})
             else:
                 users_to_create.append(User(name=name, email=email, age=age))
@@ -61,10 +61,13 @@ def import_users(request):
         return Response(
             {"message": "Error processing file", "error": str(e)}, status=500
         )
+    
+    serialized_users = UserSerializer(users_to_create, many=True).data
+    
 
     response = Response(
         {
-            "success": users_to_create,
+            "success": serialized_users,
             "rejected": errors,
             "successCount": len(users_to_create),
             "rejectedCount": len(errors),
